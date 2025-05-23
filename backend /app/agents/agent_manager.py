@@ -1,5 +1,6 @@
 # backend/app/agents/agent_manager.py
 import asyncio
+import osmnx as ox
 from typing import Dict, List, Set
 import redis.asyncio as redis
 import json
