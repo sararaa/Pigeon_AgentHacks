@@ -1,9 +1,10 @@
 .DS_Store
-<<<<<<< HEAD
-=======
 *node_modules*
 *.zip
 package-lock.json
 ~$*
 datasets/sf_simulated_traffic.csv
->>>>>>> 9a75a2c674dc67cdbce36c815dc25339b2f916df
+*venv*
+*.pyc
+*.log
+.DS_Store
