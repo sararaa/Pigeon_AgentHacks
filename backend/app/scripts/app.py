@@ -1,3 +1,10 @@
+"""
+FILE NOT USED IN PROD.
+Consider for deletion.
+"""
+
+
+
 #!/usr/bin/env python3
 """
 Loads SF traffic data, fetches street network by district or specific street via OSMnx,
@@ -125,7 +132,10 @@ def predict_level(road, ts, models, histories, lags_map):
     return hist[ts]
 
 # ─── Dump JSON for frontend ───────────────────────────────────────────────────
-def build_predictions_json(ts, models, histories, lags_map, edges):
+def build_predictions_json(ts, models, histories, lags_map, edges) -> dict:
+    """
+    Return the dictionary thats written as the json too.
+    """
     out = []
     # prepare cleaned names column
     edges = edges.copy()
@@ -144,9 +154,10 @@ def build_predictions_json(ts, models, histories, lags_map, edges):
         longest = max(segs, key=lambda g: g.length)
         coords  = [[y,x] for x,y in longest.coords]
         out.append({ 'road': road, 'level': lvl, 'path': coords })
-
+    ret = json.dumps(out, indent=4)
     with open('predictions.json','w') as f:
-        json.dump(out, f, indent=2)
+        f.write(ret)
+    return ret
 
 # ─── Main ──────────────────────────────────────────────────────────────────────
 def main():
