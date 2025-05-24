@@ -66,6 +66,25 @@ class AgentManager:
             json.dumps(self.road_conditions[segment_key])
         )
         
+        # Immediately check all agents to see if they're affected
+        print(f"Road block added at {location}")
+        
+        # Force immediate perception update for all agents
+        tasks = []
+        for agent in self.agents.values():
+            # Check if agent is near the blockage
+            agent_pos = agent.current_position
+            block_pos = (location['lat'], location['lng'])
+            distance = self.maps_service._calculate_distance(agent_pos, block_pos)
+            
+            # If agent is within 500 meters, force immediate update
+            if distance < 0.5:  # 500 meters
+                print(f"Agent {agent.id} is near block, forcing update")
+                tasks.append(self._update_agent_perception(agent))
+        
+        if tasks:
+            await asyncio.gather(*tasks)
+        
         # Trigger agent perception update
         await self._trigger_agent_updates()
     
