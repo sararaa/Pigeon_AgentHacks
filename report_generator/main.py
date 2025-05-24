@@ -6,9 +6,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# Then define and load Settings
-settings = Settings()
-
 
 # === Novita AI Config ===
 NOVITA_API_KEY = "sk_Y5Ts5IQs3XmuCBaIwTRm_VYPsFW9wmcByaIRFql31Ew"  # Replace with your real key
