@@ -8,3 +8,4 @@ datasets/sf_simulated_traffic.csv
 *.pyc
 *.log
 .DS_Store
+.vscode/
