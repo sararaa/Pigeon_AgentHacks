@@ -144,9 +144,15 @@ def generate_summary(info_for_model):
     model_output = response.text
     with open("Full_city/model_output.txt", "w") as f:
         f.write(model_output)
+    return model_output
         
 # ─── Main routine ─────────────────────────────────────────────────────────────
 def main():
+    """
+    Main entry point for the traffic prediction application.
+    Returns a written text summary of the traffic levels for each street in the Mission District
+    at a user-specified timestamp.
+    """
     print("⏳ Training models... this may take a moment.")
     info_for_model = ""
     models, histories, lags_map = train_models(df, roads)
@@ -164,8 +170,9 @@ def main():
         lvl = predict_level(road, target_ts, models, histories, lags_map)
         print(f"- {road}: Level {lvl}")
         info_for_model += f"{road} has a traffic level of {lvl} at {target_ts.strftime('%Y-%m-%d %H:%M')}\n"
-    generate_summary(info_for_model)
+    model_response = generate_summary(info_for_model)
     print("\n✅ Summary generated.")
+    return model_response
 
 if __name__ == "__main__":
     main()
