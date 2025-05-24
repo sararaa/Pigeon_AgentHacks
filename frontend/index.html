@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>San Fransico MTA</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAoH0FX8uQBoOHRIUnghIJBQUaNF-Bw-uQ&libraries=places,traffic"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>San Fransico MTA</h1>
+            <div class="controls">
+                <button id="toggleTraffic">Toggle Traffic</button>
+                <button id="toggleParking">Toggle Parking</button>
+                <input type="file" id="csvInput" accept=".csv" style="display: none;">
+                <button onclick="document.getElementById('csvInput').click()">Load CSV Data</button>
+                
+                <!-- New Time-based Query Controls -->
+                <div class="time-controls">
+                    <label for="queryDate">Date:</label>
+                    <input type="date" id="queryDate" value="2024-05-07">
+                    
+                    <label for="queryTime">Time:</label>
+                    <input type="time" id="queryTime" value="12:00">
+                    
+                    <label for="queryLocation">Location:</label>
+                    <select id="queryLocation">
+                        <option value="all">All Locations</option>
+                        <option value="San Francisco – Oakland Bay Bridge">Bay Bridge</option>
+                        <option value="The Embarcadero">The Embarcadero</option>
+                    </select>
+                    
+                    <button id="queryData">Query Data</button>
+                    <button id="predictTraffic">Predict Future</button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <div class="data-section">
+            <div class="tabs">
+                <button class="tab-button active" onclick="openTab(event, 'analytics')">Analytics</button>
+                <button class="tab-button" onclick="openTab(event, 'projects')">City Projects</button>
+                <button class="tab-button" onclick="openTab(event, 'data')">Data Management</button>
+            </div>
+            
+            <div id="analytics" class="tab-content active">
+                <div class="data-grid">
+                    <div class="data-card">
+                        <h3>Traffic Flow</h3>
+                        <div class="metric">
+                            <span class="value" id="trafficFlow">Loading...</span>
+                            <span class="unit">vehicles/hour</span>
+                        </div>
+                        <div class="trend" id="trafficTrend"></div>
+                    </div>
+                    
+                    <div class="data-card">
+                        <h3>Parking Occupancy</h3>
+                        <div class="metric">
+                            <span class="value" id="parkingOccupancy">Loading...</span>
+                            <span class="unit">% occupied</span>
+                        </div>
+                        <div class="trend" id="parkingTrend"></div>
+                    </div>
+                    
+                    <div class="data-card">
+                        <h3>Average Speed</h3>
+                        <div class="metric">
+                            <span class="value" id="avgSpeed">Loading...</span>
+                            <span class="unit">mph</span>
+                        </div>
+                        <div class="trend" id="speedTrend"></div>
+                    </div>
+                    
+                    <div class="data-card">
+                        <h3>Congestion Index</h3>
+                        <div class="metric">
+                            <span class="value" id="congestionIndex">Loading...</span>
+                            <span class="unit">index</span>
+                        </div>
+                        <div class="trend" id="congestionTrend"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="projects" class="tab-content">
+                <div class="project-controls">
+                    <button id="addProject" class="btn-primary">Add New Project</button>
+                </div>
+                <div id="projectsList" class="projects-list">
+                    <!-- Projects will be dynamically added here -->
+                </div>
+            </div>
+            
+            <div id="data" class="tab-content">
+                <div class="data-summary">
+                    <h3>Data Sources</h3>
+                    <div class="data-source">
+                        <span>Traffic Data:</span>
+                        <span id="trafficDataStatus">Ready</span>
+                    </div>
+                    <div class="data-source">
+                        <span>Parking Data:</span>
+                        <span id="parkingDataStatus">Ready</span>
+                    </div>
+                    <div class="data-source">
+                        <span>Last Updated:</span>
+                        <span id="lastUpdated">Just now</span>
+                    </div>
+                </div>
+                
+                <!-- New Report Generation Section -->
+                <div class="report-generation">
+                    <h3>Generate Official Reports</h3>
+                    <div class="report-controls">
+                        <div class="report-options">
+                            <label for="reportType">Report Type:</label>
+                            <select id="reportType">
+                                <option value="traffic">Traffic Report</option>
+                                <option value="parking">Parking Report</option>
+                            </select>
+                            
+                            <label for="reportFormat">Format:</label>
+                            <select id="reportFormat">
+                                <option value="state">State Format</option>
+                                <option value="federal">Federal Format</option>
+                            </select>
+                        </div>
+                        
+                        <div class="report-date-range">
+                            <h4>Date Range</h4>
+                            <div class="date-range-options">
+                                <div>
+                                    <input type="radio" id="rangeLast30" name="dateRangeType" value="last30" checked>
+                                    <label for="rangeLast30">Last 30 Days</label>
+                                </div>
+                                <div>
+                                    <input type="radio" id="rangeCustom" name="dateRangeType" value="custom">
+                                    <label for="rangeCustom">Custom Range</label>
+                                </div>
+                            </div>
+                            
+                            <div id="customRangeInputs" class="custom-range-inputs">
+                                <div>
+                                    <label for="rangeStartDate">Start Date:</label>
+                                    <input type="date" id="rangeStartDate">
+                                </div>
+                                <div>
+                                    <label for="rangeEndDate">End Date:</label>
+                                    <input type="date" id="rangeEndDate">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="report-location">
+                            <label for="reportLocation">Location:</label>
+                            <select id="reportLocation">
+                                <option value="all">All Locations</option>
+                                <!-- Will be populated dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="visualization-options">
+                            <h4>Include Visualizations</h4>
+                            <div>
+                                <input type="checkbox" id="includeLineGraph" checked>
+                                <label for="includeLineGraph">Time Series Graph</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="includeHeatmap" checked>
+                                <label for="includeHeatmap">Heatmap</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="includeComparison" checked>
+                                <label for="includeComparison">Comparison Charts</label>
+                            </div>
+                        </div>
+                        
+                        <button id="generateReport" class="btn-primary">Generate Report</button>
+                    </div>
+                    <div id="reportStatus" class="report-status"></div>
+                    <div id="reportPreview" class="report-preview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add City Project</h2>
+            <form id="projectForm">
+                <input type="text" id="projectName" placeholder="Project Name" required>
+                <textarea id="projectDescription" placeholder="Project Description" required></textarea>
+                <input type="text" id="projectLocation" placeholder="Address or Location" required>
+                <select id="projectType" required>
+                    <option value="">Select Project Type</option>
+                    <option value="infrastructure">Infrastructure</option>
+                    <option value="housing">Housing Development</option>
+                    <option value="commercial">Commercial</option>
+                    <option value="transportation">Transportation</option>
+                    <option value="parks">Parks & Recreation</option>
+                </select>
+                <input type="date" id="projectStartDate" required>
+                <button type="submit">Add Project</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
