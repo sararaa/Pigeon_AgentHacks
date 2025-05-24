@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
 # === 1. Load & prep ===
-df = pd.read_csv("sf_simulated_traffic.csv", parse_dates=["timestamp"])
+df = pd.read_csv("datasets/sf_simulated_traffic.csv", parse_dates=["timestamp"])
 road_name = "Market St"
 rd = df[df["road_name"] == road_name].sort_values("timestamp").reset_index(drop=True)
 
