@@ -1,64 +1,99 @@
+#!/usr/bin/env python3
+"""
+Loads SF traffic data, fetches all streets in the Mission District via OSMnx
+(using a buffered point), filters the dataset to those streets, trains a RandomForest per street,
+and predicts traffic levels at a user-specified timestamp.
+"""
 import os
-import json
+import sys
+import osmnx as ox
 import pandas as pd
 import numpy as np
 from datetime import timedelta
 from sklearn.ensemble import RandomForestRegressor
-import googlemaps
 
+# ─── Configuration ─────────────────────────────────────────────────────────────
 CSV_PATH = "sf_simulated_traffic.csv"
-API_KEY  = "AIzaSyAoH0FX8uQBoOHRIUnghIJBQUaNF-Bw-uQ"
-if not API_KEY:
-    print("Please set GOOGLE_MAPS_API_KEY in your env and rerun.")
-    exit(1)
+DISTRICT_NAME = "Mission District, San Francisco, California, USA"
+BUFFER_DIST_M = 1500  # buffer distance in meters
 
-# ─── 1) load data ───────────────────────────────────────────────────────────────
+# ─── Load data ─────────────────────────────────────────────────────────────────
+if not os.path.exists(CSV_PATH):
+    print(f"❌ CSV file not found at {CSV_PATH}", file=sys.stderr)
+    sys.exit(1)
+
+print(f"⏳ Loading traffic data from {CSV_PATH}...")
 df = pd.read_csv(CSV_PATH, parse_dates=["timestamp"])
-roads = df["road_name"].unique()[:5] 
 
-# ─── 2) train one RF per road & build history ────────────────────────────────────
-models, histories, lags_by_road = {}, {}, {}
-for road in roads:
-    rd = df[df["road_name"] == road].sort_values("timestamp")
-    print(f"⏳ Training on: {road}")
-    if rd.shape[0] < 10:
-        continue
+# ─── Fetch street network via buffered point ───────────────────────────────────
+print(f"⏳ Geocoding district center: {DISTRICT_NAME}...")
+try:
+    location_point = ox.geocode(DISTRICT_NAME)
+except Exception as e:
+    print(f"❌ Could not geocode '{DISTRICT_NAME}': {e}", file=sys.stderr)
+    sys.exit(1)
 
-    data_start, last_ts = rd["timestamp"].min(), rd["timestamp"].max()
-    max_h = int((last_ts - data_start).total_seconds()//3600)
-    lags = [h for h in (1,2,3,24,168) if h <= max_h]
-    if len(lags) < 3:
-        continue
+print(f"⏳ Downloading street network within {BUFFER_DIST_M}m of center...")
+G = ox.graph_from_point(location_point, dist=BUFFER_DIST_M, network_type='drive', simplify=True)
+edges = ox.graph_to_gdfs(G, nodes=False)
 
-    # create lag features
-    for lag in lags:
-        rd[f"lag_{lag}"] = rd["traffic_level"].shift(lag)
-    rd["hour"]      = rd["timestamp"].dt.hour
-    rd["dayofweek"] = rd["timestamp"].dt.dayofweek
-    rd2 = rd.dropna()
+# ─── Extract unique street names from OSM edges ────────────────────────────────
+street_names = set()
+for name in edges['name']:
+    if isinstance(name, list):
+        street_names.update(name)
+    elif isinstance(name, str):
+        street_names.add(name)
 
-    X = rd2[[f"lag_{lag}" for lag in lags] + ["hour","dayofweek"]].values
-    y = rd2["traffic_level"].astype(int).values
-    model = RandomForestRegressor(n_estimators=50, max_depth=10, random_state=42)
-    model.fit(X, y)
+# ─── Filter dataset to those streets ───────────────────────────────────────────
+available = set(df['road_name'].unique())
+roads = [r for r in available if r in street_names]
+if not roads:
+    print("❌ No matching streets found in Mission District buffer.", file=sys.stderr)
+    sys.exit(1)
+print(f"✅ Found {len(roads)} matching streets in Mission District buffer.")
 
-    models[road]         = model
-    lags_by_road[road]   = lags
-    histories[road]      = {row.timestamp: int(row.traffic_level)
-                            for row in rd2.itertuples()}
+# ─── Utility: train models ─────────────────────────────────────────────────────
+def train_models(df, roads):
+    models, histories, lags_map = {}, {}, {}
+    for road in roads:
+        rd = df[df['road_name'] == road].sort_values('timestamp')
+        if rd.shape[0] < 20:
+            continue
+        # determine safe lags
+        start_ts = rd['timestamp'].min()
+        last_ts = rd['timestamp'].max()
+        max_hours = int((last_ts - start_ts).total_seconds() // 3600)
+        candidate_lags = [1, 2, 3, 24]
+        lags = [h for h in candidate_lags if h <= max_hours]
+        if len(lags) < 2:
+            continue
+        # feature engineering
+        for lag in lags:
+            rd[f'lag_{lag}'] = rd['traffic_level'].shift(lag)
+        rd['hour'] = rd['timestamp'].dt.hour
+        rd['dayofweek'] = rd['timestamp'].dt.dayofweek
+        rd2 = rd.dropna().reset_index(drop=True)
+        X = rd2[[f'lag_{lag}' for lag in lags] + ['hour', 'dayofweek']].values
+        y = rd2['traffic_level'].astype(int).values
+        model = RandomForestRegressor(n_estimators=50, max_depth=10, random_state=42)
+        model.fit(X, y)
+        models[road] = model
+        histories[road] = {row.timestamp: int(row.traffic_level) for row in rd2.itertuples()}
+        lags_map[road] = lags
+    return models, histories, lags_map
 
-
-def predict_level(road, target):
-    hist  = histories[road]
+# ─── Utility: predict level ────────────────────────────────────────────────────
+def predict_level(road, target_ts, models, histories, lags_map):
+    hist = histories[road]
     model = models[road]
-    lags  = lags_by_road[road]
-    last  = max(hist)
-    if target in hist:
-        return hist[target]
-
-    cur = last
-    while cur < target:
-        nxt = cur + timedelta(hours=1)
+    lags = lags_map[road]
+    last_ts = max(hist)
+    if target_ts in hist:
+        return hist[target_ts]
+    current = last_ts
+    while current < target_ts:
+        nxt = current + timedelta(hours=1)
         feats = []
         for lag in lags:
             ts_lag = nxt - timedelta(hours=lag)
@@ -68,81 +103,28 @@ def predict_level(road, target):
                 prev = [t for t in hist if t < ts_lag]
                 feats.append(hist[max(prev)] if prev else 2)
         feats += [nxt.hour, nxt.dayofweek]
-        p = model.predict(np.array(feats).reshape(1,-1))[0]
-        hist[nxt] = int(round(p))
-        cur = nxt
-    return hist[target]
+        pred = model.predict(np.array(feats).reshape(1, -1))[0]
+        hist[nxt] = int(round(pred))
+        current = nxt
+    return hist[target_ts]
 
-# ─── 3) geocode each road ───────────────────────────────────────────────────────
-gmaps = googlemaps.Client(key=API_KEY)
-road_coords = {}
-for road in models:
-    res = gmaps.geocode(f"{road}, San Francisco, CA")
-    if res:
-        loc = res[0]["geometry"]["location"]
-        road_coords[road] = (loc["lat"], loc["lng"])
+# ─── Main routine ─────────────────────────────────────────────────────────────
+def main():
+    print("⏳ Training models... this may take a moment.")
+    models, histories, lags_map = train_models(df, roads)
+    if not models:
+        print("❌ No models trained. Check your data and district.", file=sys.stderr)
+        sys.exit(1)
+    ts_str = input("Enter future timestamp (YYYY-MM-DD HH:MM): ")
+    try:
+        target_ts = pd.to_datetime(ts_str)
+    except Exception:
+        print("❌ Invalid timestamp format.", file=sys.stderr)
+        sys.exit(1)
+    print(f"\n🔮 Predictions for Mission District buffer at {target_ts}:\n")
+    for road in models:
+        lvl = predict_level(road, target_ts, models, histories, lags_map)
+        print(f"- {road}: Level {lvl}")
 
-# ─── 4) ask user for timestamp & predict ────────────────────────────────────────
-ts_input = input("Enter future timestamp (YYYY-MM-DD HH:MM): ")
-try:
-    target = pd.to_datetime(ts_input)
-except:
-    print("❌ bad format")
-    exit(1)
-
-out = []
-for road in models:
-    lvl = predict_level(road, target)
-    coord = road_coords.get(road)
-    if coord:
-        out.append({
-            "road":  road,
-            "lat":   coord[0],
-            "lng":   coord[1],
-            "level": lvl
-        })
-
-# ─── 5) emit static HTML ────────────────────────────────────────────────────────
-html = f"""<!DOCTYPE html>
-<html>
-  <head>
-    <title>Traffic Predictions @ {target}</title>
-    <style>#map {{ height:100vh; width:100%; }}</style>
-    <script
-      src="https://maps.googleapis.com/maps/api/js?key={API_KEY}&callback=initMap"
-      async defer></script>
-  </head>
-  <body>
-    <div id="map"></div>
-    <script>
-      function initMap() {{
-        const map = new google.maps.Map(document.getElementById('map'), {{
-          center: {{ lat: 37.7749, lng: -122.4194 }},
-          zoom: 13
-        }});
-        new google.maps.TrafficLayer().setMap(map);
-
-        const data = {json.dumps(out)};
-        const colors = {{1:'green',2:'orange',3:'red',4:'darkred'}};
-
-        data.forEach(pt => {{
-          new google.maps.Circle({{
-            map,
-            center: {{ lat: pt.lat, lng: pt.lng }},
-            radius: 80,
-            strokeColor: colors[pt.level],
-            fillColor:   colors[pt.level],
-            fillOpacity: 0.4,
-            strokeWeight: 2
-          }});
-        }});
-      }}
-    </script>
-  </body>
-</html>
-"""
-
-with open("output.html","w") as f:
-    f.write(html)
-
-print("✅ Wrote output.html — open it in your browser to see the map.")
+if __name__ == "__main__":
+    main()
