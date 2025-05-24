@@ -3,3 +3,4 @@
 *.zip
 package-lock.json
 ~$*
+datasets/sf_simulated_traffic.csv
