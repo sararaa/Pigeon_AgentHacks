@@ -11,12 +11,14 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta
 from sklearn.ensemble import RandomForestRegressor
+from google import genai
+
 
 # ─── Configuration ─────────────────────────────────────────────────────────────
-CSV_PATH = "sf_simulated_traffic.csv"
+CSV_PATH = "datasets/sf_simulated_traffic.csv"
 DISTRICT_NAME = "Mission District, San Francisco, California, USA"
-BUFFER_DIST_M = 1500  # buffer distance in meters
-
+BUFFER_DIST_M = 500  # buffer distance in meters
+GEMINI_KEY = "AIzaSyDSyIBzIJ9yVnXYd6sJaE7oZ0Vqnc4kEPM"
 # ─── Load data ─────────────────────────────────────────────────────────────────
 if not os.path.exists(CSV_PATH):
     print(f"❌ CSV file not found at {CSV_PATH}", file=sys.stderr)
@@ -108,9 +110,45 @@ def predict_level(road, target_ts, models, histories, lags_map):
         current = nxt
     return hist[target_ts]
 
+def generate_summary(info_for_model):
+    # Create an instance of the Google GenAI API client
+    client = genai.Client(api_key=GEMINI_KEY)
+    #gemini-2.0-flash is also a really good option, but does have lower RPD and other dimension limits.
+    model = "gemma-3-27b-it" # There are a LOT of models to choose from. But in my experience, I feel comfortable with AND use 2.0-flash the most. Will look into 2.5 series once they go through stable release.
+    # the gemma 3 model here can process 10K+ requests a day, which is really good for this 
+    # specific contex because, as you saw, our dataset has 10K entries, which equates to 10K requests for this dataset.
+    template_prompt = f"""This is some information we got from the result of a traffic prediction model making predictions for different streets in Mission District, San Francisco. 
+    For each street, there are 4 possible levels of traffic: 1, 2, 3 and 4. 4 is the worst traffic level, and 1 is the best.
+    The traffic levels are based on the amount of traffic in the area.
+    
+    Please generate a written verbal summary of the traffic levels for each street, that is intended for any human audience to be able to read.
+    It simply has to be informative. Do not directly mention the levels of 1, 2, 3 or 4 at all. These are not userfacing details. Do not mention the levels at all. 
+    You can feel free to replace them with words like "extremely congested", "free-flowing", "light traffic", "packed", etc.
+    I will give you the information you have to use to generate this summary. Here is the information:
+    {info_for_model}
+
+    \n\n
+    Cut straight to the point, and don't add any fluff or anything else, like "as of...", or mention the day at all. Just the summary.
+    Start with a general gist or overall view for the whole district (assume that all streets mentioned are in the Mission District).
+    For some of them, mention some potential consequences of the traffic levels, like "or you can do construction in this area" OR OTHER THINGS
+    or even something humourous like "this area is going to be a parking lot" or "this area is going to be packed.". 
+    Obviously don't use "this area." Try to be as funny as possible.
+    
+    If there are A LOT of streets with the same traffic level, you can just say "there are a lot of streets with traffic level X" and then mention a maximum of 3 of those streets by name. This is the most important rule for you to follow."""
+
+    prompt = template_prompt
+
+    response = client.models.generate_content(
+                model=model, contents=prompt
+    )
+    model_output = response.text
+    with open("Full_city/model_output.txt", "w") as f:
+        f.write(model_output)
+        
 # ─── Main routine ─────────────────────────────────────────────────────────────
 def main():
     print("⏳ Training models... this may take a moment.")
+    info_for_model = ""
     models, histories, lags_map = train_models(df, roads)
     if not models:
         print("❌ No models trained. Check your data and district.", file=sys.stderr)
@@ -125,6 +163,12 @@ def main():
     for road in models:
         lvl = predict_level(road, target_ts, models, histories, lags_map)
         print(f"- {road}: Level {lvl}")
+        info_for_model += f"{road} has a traffic level of {lvl} at {target_ts.strftime('%Y-%m-%d %H:%M')}\n"
+    generate_summary(info_for_model)
+    print("\n✅ Summary generated.")
 
 if __name__ == "__main__":
     main()
+
+
+    
