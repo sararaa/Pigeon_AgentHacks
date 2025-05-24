@@ -1,6 +1,7 @@
 import MapView from './components/MapView';
 import ControlPanel from './components/ControlPanel';
 import TrafficStats from './components/TrafficStats';
+import React, { useState } from 'react'; 
 import './App.css';
 
 function App() {
@@ -8,7 +9,7 @@ function App() {
   const [roadConditions, setRoadConditions] = useState({});
   const [stats, setStats] = useState({});
   const [isSimulationRunning, setIsSimulationRunning] = useState(false);
-  
+
   return (
     <div className="App">
       <div className="main-container">
