@@ -7,6 +7,7 @@ from datetime import datetime
 import numpy as np
 from .traffic_agent import TrafficAgent
 from ..maps.google_maps import GoogleMapsService
+import uuid
 
 class AgentManager:
     def __init__(self, maps_service: GoogleMapsService, redis_client: redis.Redis):

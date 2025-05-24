@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Traffic Test</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background-color: #4CAF50; color: white; }
+        .disconnected { background-color: #f44336; color: white; }
+        #messages { 
+            border: 1px solid #ddd; 
+            height: 400px; 
+            overflow-y: auto; 
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+        .message { 
+            margin: 5px 0; 
+            padding: 5px; 
+            background-color: white;
+            border-radius: 3px;
+        }
+        button { 
+            margin: 5px; 
+            padding: 10px 20px; 
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Traffic Simulation Socket.IO Test</h1>
+    
+    <div id="status" class="disconnected">Disconnected</div>
+    
+    <div>
+        <button onclick="startSimulation()">Start Simulation</button>
+        <button onclick="spawnAgents()">Spawn 5 Agents</button>
+        <button onclick="blockRoad()">Block Random Road</button>
+        <button onclick="getStatus()">Get Status</button>
+    </div>
+    
+    <h2>Messages:</h2>
+    <div id="messages"></div>
+    
+    <script>
+        const socket = io('http://localhost:8000');
+        const messagesDiv = document.getElementById('messages');
+        const statusDiv = document.getElementById('status');
+        
+        function addMessage(message) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            messagesDiv.appendChild(div);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        socket.on('connect', () => {
+            statusDiv.textContent = 'Connected';
+            statusDiv.className = 'connected';
+            addMessage('Connected to server');
+        });
+        
+        socket.on('disconnect', () => {
+            statusDiv.textContent = 'Disconnected';
+            statusDiv.className = 'disconnected';
+            addMessage('Disconnected from server');
+        });
+        
+        socket.on('traffic_update', (data) => {
+            const update = JSON.parse(data);
+            addMessage(`Traffic Update: ${update.agents?.length || 0} agents, ${Object.keys(update.road_conditions || {}).length} road blocks`);
+        });
+        
+        socket.on('connected', (data) => {
+            addMessage(`Server message: ${data.data}`);
+        });
+        
+        async function startSimulation() {
+            try {
+                const response = await fetch('http://localhost:8000/api/simulation/start', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                addMessage(`Simulation started: ${JSON.stringify(data)}`);
+            } catch (error) {
+                addMessage(`Error starting simulation: ${error.message}`);
+            }
+        }
+        
+        async function spawnAgents() {
+            try {
+                const response = await fetch('http://localhost:8000/api/agents/spawn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        count: 5,
+                        bounds: {
+                            north: 37.7849,
+                            south: 37.7649,
+                            east: -122.4094,
+                            west: -122.4294
+                        }
+                    })
+                });
+                const data = await response.json();
+                addMessage(`Agents spawned: ${JSON.stringify(data)}`);
+            } catch (error) {
+                addMessage(`Error spawning agents: ${error.message}`);
+            }
+        }
+        
+        async function blockRoad() {
+            try {
+                const lat = 37.7649 + Math.random() * 0.02;
+                const lng = -122.4294 + Math.random() * 0.02;
+                
+                const response = await fetch('http://localhost:8000/api/roads/block', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lng })
+                });
+                const data = await response.json();
+                addMessage(`Road blocked at (${lat.toFixed(4)}, ${lng.toFixed(4)}): ${JSON.stringify(data)}`);
+            } catch (error) {
+                addMessage(`Error blocking road: ${error.message}`);
+            }
+        }
+        
+        async function getStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/api/simulation/status');
+                const data = await response.json();
+                addMessage(`Status: ${JSON.stringify(data)}`);
+            } catch (error) {
+                addMessage(`Error getting status: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

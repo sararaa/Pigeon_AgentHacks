@@ -1,14 +1,31 @@
+import React, { useState, useEffect } from 'react';
 import MapView from './components/MapView';
 import ControlPanel from './components/ControlPanel';
 import TrafficStats from './components/TrafficStats';
-import React, { useState } from 'react'; 
+import io from 'socket.io-client';
 import './App.css';
 
 function App() {
   const [agents, setAgents] = useState([]);
-  const [roadConditions, setRoadConditions] = useState({});
-  const [stats, setStats] = useState({});
-  const [isSimulationRunning, setIsSimulationRunning] = useState(false);
+  const [trafficData, setTrafficData] = useState({});
+  const [isRunning, setIsRunning] = useState(false);
+  
+  useEffect(() => {
+    const socket = io('http://localhost:8000');
+    
+    socket.on('state_update', (data) => {
+      if (data.agents) {
+        setAgents(data.agents);
+      }
+      if (data.traffic) {
+        setTrafficData(data.traffic);
+      }
+    });
+    
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div className="App">
