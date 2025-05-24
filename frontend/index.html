@@ -133,60 +133,14 @@
                             </select>
                         </div>
                         
-                        <div class="report-date-range">
-                            <h4>Date Range</h4>
-                            <div class="date-range-options">
-                                <div>
-                                    <input type="radio" id="rangeLast30" name="dateRangeType" value="last30" checked>
-                                    <label for="rangeLast30">Last 30 Days</label>
-                                </div>
-                                <div>
-                                    <input type="radio" id="rangeCustom" name="dateRangeType" value="custom">
-                                    <label for="rangeCustom">Custom Range</label>
-                                </div>
-                            </div>
-                            
-                            <div id="customRangeInputs" class="custom-range-inputs">
-                                <div>
-                                    <label for="rangeStartDate">Start Date:</label>
-                                    <input type="date" id="rangeStartDate">
-                                </div>
-                                <div>
-                                    <label for="rangeEndDate">End Date:</label>
-                                    <input type="date" id="rangeEndDate">
-                                </div>
-                            </div>
+                        <!-- Replace the report-generation section with this minimal version -->
+                        <div class="report-generation">
+                          <h3>Generate Official Reports</h3>
+                          <button id="generateReport" class="btn-primary">Generate Report</button>
+                          <div id="reportStatus" class="report-status"></div>
+                          <div id="reportPreview" class="report-preview"></div>
                         </div>
-                        
-                        <div class="report-location">
-                            <label for="reportLocation">Location:</label>
-                            <select id="reportLocation">
-                                <option value="all">All Locations</option>
-                                <!-- Will be populated dynamically -->
-                            </select>
-                        </div>
-                        
-                        <div class="visualization-options">
-                            <h4>Include Visualizations</h4>
-                            <div>
-                                <input type="checkbox" id="includeLineGraph" checked>
-                                <label for="includeLineGraph">Time Series Graph</label>
-                            </div>
-                            <div>
-                                <input type="checkbox" id="includeHeatmap" checked>
-                                <label for="includeHeatmap">Heatmap</label>
-                            </div>
-                            <div>
-                                <input type="checkbox" id="includeComparison" checked>
-                                <label for="includeComparison">Comparison Charts</label>
-                            </div>
-                        </div>
-                        
-                        <button id="generateReport" class="btn-primary">Generate Report</button>
                     </div>
-                    <div id="reportStatus" class="report-status"></div>
-                    <div id="reportPreview" class="report-preview"></div>
-                </div>
             </div>
         </div>
     </div>

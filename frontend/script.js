@@ -499,20 +499,7 @@ function setupEventListeners() {
     });
 }
 
-// Update the report time and location display
-function updateReportTimeLocation() {
-    const date = document.getElementById('queryDate').value;
-    const time = document.getElementById('queryTime').value;
-    const location = document.getElementById('queryLocation').value;
-    const display = document.getElementById('reportTimeLocationDisplay');
-    
-    if (date && time) {
-        const formattedDate = new Date(date + 'T' + time).toLocaleString();
-        display.textContent = `${formattedDate} - ${location === 'all' ? 'All Locations' : location}`;
-    } else {
-        display.textContent = 'No data selected';
-    }
-}
+
 
 // Generate report using Novita.ai API
 async function generateReport() {
@@ -552,6 +539,8 @@ async function generateReport() {
             report_type: reportType,
             format: reportFormat,
             timestamp: `${date}T${time}:00`,
+            start_date: date,  // Add this for date range support
+            end_date: date,    // Add this for date range support
             location: location === 'all' ? 'San Francisco' : location,
             data: reportData,
             is_prediction: predictionMode
@@ -842,6 +831,25 @@ function openTab(evt, tabName) {
 // Initialize map when page loads
 window.onload = initMap;
 
+// Add this minimal report generation logic at the end of your script.js
+
+document.getElementById('generateReport').addEventListener('click', async () => {
+  const statusElement = document.getElementById('reportStatus');
+  statusElement.innerHTML = 'Generating report...';
+  try {
+    const response = await fetch('http://localhost:8000/generate_report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'Generate a basic traffic report.' })
+    });
+    const data = await response.json();
+    document.getElementById('reportPreview').textContent = data.report || 'No report generated.';
+    statusElement.innerHTML = 'Report generated successfully.';
+  } catch (error) {
+    statusElement.innerHTML = 'Error generating report.';
+  }
+});
+
 // Enhanced event listeners
 function setupEventListeners() {
     // ... existing event listeners ...
@@ -863,18 +871,7 @@ function setupEventListeners() {
     });
 }
 
-// Initialize date range inputs
-function initializeDateRangeInputs() {
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    
-    document.getElementById('rangeEndDate').value = formatDateForInput(today);
-    document.getElementById('rangeStartDate').value = formatDateForInput(thirtyDaysAgo);
-    
-    // Initially hide custom range inputs
-    document.getElementById('customRangeInputs').style.display = 'none';
-}
+
 
 // Format date for input fields (YYYY-MM-DD)
 function formatDateForInput(date) {
@@ -884,31 +881,9 @@ function formatDateForInput(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Toggle custom date inputs based on selection
-function toggleCustomDateInputs() {
-    const customInputs = document.getElementById('customRangeInputs');
-    if (document.getElementById('rangeCustom').checked) {
-        customInputs.style.display = 'flex';
-    } else {
-        customInputs.style.display = 'none';
-    }
-}
 
-// Populate report location dropdown
-function populateReportLocationDropdown() {
-    const dropdown = document.getElementById('reportLocation');
-    const locations = [...new Set(historicalData.map(d => d.location))];
-    
-    // Clear existing options except "All Locations"
-    dropdown.innerHTML = '<option value="all">All Locations</option>';
-    
-    locations.forEach(location => {
-        const option = document.createElement('option');
-        option.value = location;
-        option.textContent = location;
-        dropdown.appendChild(option);
-    });
-}
+
+
 
 // Enhanced report generation with date range and visualizations
 async function generateReport() {
@@ -924,9 +899,9 @@ async function generateReport() {
         // Find the min and max dates in the historical data
         const dates = historicalData.map(record => new Date(record.timestamp.split(' ')[0]));
         endDate = new Date(Math.max.apply(null, dates));
-        startDate = new Date(Math.min.apply(null, dates));
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 7); // Use last 7 days of data
         
-        // If we have less than 30 days of data, use all available data
         console.log(`Using data range: ${startDate.toDateString()} to ${endDate.toDateString()}`);
     } else {
         startDate = new Date(document.getElementById('rangeStartDate').value);
@@ -939,60 +914,52 @@ async function generateReport() {
         return;
     }
     
-    // Get visualization options
-    const includeLineGraph = document.getElementById('includeLineGraph').checked;
-    const includeHeatmap = document.getElementById('includeHeatmap').checked;
-    const includeComparison = document.getElementById('includeComparison').checked;
-    
     // Show loading status
     statusElement.innerHTML = '<div>Generating comprehensive report... Please wait.</div>';
     previewElement.innerHTML = '';
     previewElement.style.display = 'none';
     
     try {
-        // Get data for the report date range
-        const reportData = getDataForDateRange(reportType, startDate, endDate, location);
+        const response = await fetch('http://localhost:8001/generate_report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                report_type: reportType,
+                format: reportFormat,
+                date_range: {
+                    start: formatDateForInput(startDate),
+                    end: formatDateForInput(endDate)
+                },
+                location: location === 'all' ? 'San Francisco' : location
+            })
+        });
         
-        if (!reportData || reportData.length === 0) {
-            statusElement.innerHTML = '<div class="report-error">No data available for the selected criteria</div>';
-            return;
+        const result = await response.json();
+        
+        // Display the report summary
+        if (result.summary) {
+            displayDataSummary(result.summary);
         }
         
-        // Format data for Novita.ai API
-        const apiData = {
-            api_key: NOVITA_API_KEY,
-            report_type: reportType,
-            format: reportFormat,
-            start_date: formatDateForInput(startDate),
-            end_date: formatDateForInput(endDate),
-            location: location === 'all' ? 'San Francisco' : location,
-            data: reportData,
-            include_visualizations: {
-                line_graph: includeLineGraph,
-                heatmap: includeHeatmap,
-                comparison: includeComparison
-            }
-        };
+        // If we have a report URL, open it in a new tab
+        if (result.report_url) {
+            window.open(result.report_url, '_blank');
+        }
         
-        // Simulate API call (in a real implementation, you would make an actual API call)
-        setTimeout(() => {
-            // Generate report preview
-            generateReportPreview(reportType, startDate, endDate, location, reportData, {
-                lineGraph: includeLineGraph,
-                heatmap: includeHeatmap,
-                comparison: includeComparison
-            });
-            
-            // Update status
-            statusElement.innerHTML = `
-                <div class="report-success">
-                    <h4>Report Generated Successfully</h4>
-                    <p>A comprehensive ${reportType} report has been generated for ${location === 'all' ? 'all locations in San Francisco' : location}.</p>
-                    <p>Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}</p>
-                    <a href="#" class="report-download" onclick="downloadFullReport('${reportType}', '${reportFormat}', '${formatDateForInput(startDate)}', '${formatDateForInput(endDate)}', '${location}')">Download Full Report</a>
-                </div>
-            `;
-        }, 2000);
+        // Update status
+        statusElement.innerHTML = `
+            <div class="report-success">
+                <h4>Report Generated Successfully</h4>
+                <p>A comprehensive ${reportType} report has been generated.</p>
+                <p>Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}</p>
+                ${result.report_url ? 
+                    `<a href="${result.report_url}" class="report-download" target="_blank">View Report</a>` : 
+                    `<a href="#" class="report-download" onclick="downloadFullReport('${reportType}', '${reportFormat}', '${formatDateForInput(startDate)}', '${formatDateForInput(endDate)}')">Download Full Report</a>`
+                }
+            </div>
+        `;
         
     } catch (error) {
         console.error('Error generating report:', error);
@@ -1035,158 +1002,42 @@ function getDataForDateRange(reportType, startDate, endDate, location) {
     }
 }
 
-// Generate report preview with visualizations
-function generateReportPreview(reportType, startDate, endDate, location, reportData, visualOptions) {
+// Function to display data summary
+function displayDataSummary(summary) {
     const previewElement = document.getElementById('reportPreview');
     
-    // Create report header
-    const reportTitle = reportType === 'traffic' ? 'Traffic Analysis Report' : 'Parking Availability Report';
-    const locationDisplay = location === 'all' ? 'All San Francisco Locations' : location;
+    if (!summary) {
+        previewElement.innerHTML = '<div class="report-error">No summary data available</div>';
+        previewElement.style.display = 'block';
+        return;
+    }
     
-    let previewHTML = `
-        <h2>${reportTitle}</h2>
-        <p class="report-subtitle">Location: ${locationDisplay}</p>
-        <p class="report-subtitle">Period: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}</p>
-        
+    const summaryHtml = `
         <div class="report-summary">
-            <h4>Executive Summary</h4>
-            <p>This report provides a comprehensive analysis of ${reportType} data for ${locationDisplay} over the selected time period. The data shows patterns and trends that can inform city planning and resource allocation decisions.</p>
-            
-            <div class="report-metrics">
-    `;
-    
-    // Add metrics based on report type
-    if (reportType === 'traffic') {
-        // Calculate average metrics
-        const avgTrafficFlow = reportData.reduce((sum, item) => sum + item.traffic_flow, 0) / reportData.length;
-        const avgSpeed = reportData.reduce((sum, item) => sum + item.avg_speed, 0) / reportData.length;
-        const peakTrafficFlow = Math.max(...reportData.map(item => item.traffic_flow));
-        const minSpeed = Math.min(...reportData.map(item => item.avg_speed));
-        
-        previewHTML += `
-                <div class="report-metric">
-                    <span class="label">Average Traffic Flow</span>
-                    <span class="value">${Math.round(avgTrafficFlow)}</span>
-                    <span class="unit">vehicles/hour</span>
+            <h3>Data Summary</h3>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <span class="stat-value">${summary.total_records}</span>
+                    <span class="stat-label">Total Records</span>
                 </div>
-                <div class="report-metric">
-                    <span class="label">Average Speed</span>
-                    <span class="value">${Math.round(avgSpeed)}</span>
-                    <span class="unit">mph</span>
+                <div class="stat-item">
+                    <span class="stat-value">${summary.unique_roads}</span>
+                    <span class="stat-label">Unique Roads</span>
                 </div>
-                <div class="report-metric">
-                    <span class="label">Peak Traffic Flow</span>
-                    <span class="value">${Math.round(peakTrafficFlow)}</span>
-                    <span class="unit">vehicles/hour</span>
+                <div class="stat-item">
+                    <span class="stat-value">${summary.average_traffic_level}</span>
+                    <span class="stat-label">Avg Traffic Level</span>
                 </div>
-                <div class="report-metric">
-                    <span class="label">Minimum Speed</span>
-                    <span class="value">${Math.round(minSpeed)}</span>
-                    <span class="unit">mph</span>
+                <div class="stat-item">
+                    <span class="stat-value">${summary.peak_traffic_percentage}%</span>
+                    <span class="stat-label">Peak Traffic</span>
                 </div>
-        `;
-    } else { // Parking report
-        // Calculate average metrics
-        const avgOccupancy = reportData.reduce((sum, item) => sum + item.occupancy_percentage, 0) / reportData.length;
-        const peakOccupancy = Math.max(...reportData.map(item => item.occupancy_percentage));
-        const minOccupancy = Math.min(...reportData.map(item => item.occupancy_percentage));
-        const avgAvailableSpots = reportData.reduce((sum, item) => sum + item.available_spots, 0) / reportData.length;
-        
-        previewHTML += `
-                <div class="report-metric">
-                    <span class="label">Average Occupancy</span>
-                    <span class="value">${Math.round(avgOccupancy)}%</span>
-                    <span class="unit">of capacity</span>
-                </div>
-                <div class="report-metric">
-                    <span class="label">Peak Occupancy</span>
-                    <span class="value">${Math.round(peakOccupancy)}%</span>
-                    <span class="unit">of capacity</span>
-                </div>
-                <div class="report-metric">
-                    <span class="label">Minimum Occupancy</span>
-                    <span class="value">${Math.round(minOccupancy)}%</span>
-                    <span class="unit">of capacity</span>
-                </div>
-                <div class="report-metric">
-                    <span class="label">Avg. Available Spots</span>
-                    <span class="value">${Math.round(avgAvailableSpots)}</span>
-                    <span class="unit">spaces</span>
-                </div>
-        `;
-    }
-    
-    previewHTML += `
             </div>
         </div>
     `;
     
-    // Add visualizations based on options
-    if (visualOptions.lineGraph) {
-        previewHTML += `
-            <h3>Time Series Analysis</h3>
-            <p>The following graph shows the trend of ${reportType === 'traffic' ? 'traffic flow' : 'parking occupancy'} over the selected time period.</p>
-            <div class="report-chart" id="timeSeriesChart">
-                <div class="report-chart-placeholder">Time series visualization will appear here in the actual report</div>
-            </div>
-        `;
-    }
-    
-    if (visualOptions.heatmap) {
-        previewHTML += `
-            <h3>Geographic Distribution</h3>
-            <p>The heatmap below shows the spatial distribution of ${reportType === 'traffic' ? 'traffic congestion' : 'parking demand'} across different areas.</p>
-            <div class="report-heatmap" id="heatmapVisualization">
-                <div class="report-chart-placeholder">Heatmap visualization will appear here in the actual report</div>
-            </div>
-        `;
-    }
-    
-    if (visualOptions.comparison) {
-        previewHTML += `
-            <h3>Comparative Analysis</h3>
-            <p>The chart below compares ${reportType === 'traffic' ? 'traffic patterns' : 'parking availability'} across different locations and time periods.</p>
-            <div class="report-chart" id="comparisonChart">
-                <div class="report-chart-placeholder">Comparison visualization will appear here in the actual report</div>
-            </div>
-        `;
-    }
-    
-    // Add recommendations section
-    previewHTML += `
-        <div class="report-recommendations">
-            <h3>Recommendations</h3>
-            <p>Based on the analysis of the data, the following recommendations are provided:</p>
-            <ul>
-    `;
-    
-    if (reportType === 'traffic') {
-        previewHTML += `
-                <li>Consider implementing traffic calming measures in areas with consistently high traffic flow.</li>
-                <li>Optimize traffic signal timing during peak hours to improve flow.</li>
-                <li>Explore alternative routing options for areas with low average speeds.</li>
-                <li>Consider expanding public transportation options in high congestion areas.</li>
-        `;
-    } else { // Parking recommendations
-        previewHTML += `
-                <li>Implement dynamic pricing in areas with consistently high occupancy rates.</li>
-                <li>Consider adding additional parking capacity in high-demand areas.</li>
-                <li>Improve signage and wayfinding to underutilized parking areas.</li>
-                <li>Explore shared parking arrangements during different times of day.</li>
-        `;
-    }
-    
-    previewHTML += `
-            </ul>
-        </div>
-    `;
-    
-    // Set the preview HTML and display it
-    previewElement.innerHTML = previewHTML;
+    previewElement.innerHTML = summaryHtml;
     previewElement.style.display = 'block';
-    
-    // In a real implementation, you would use a charting library like Chart.js or D3.js
-    // to create actual visualizations in the designated containers
 }
 
 // Download full report with visualizations
@@ -1357,3 +1208,22 @@ function openTab(evt, tabName) {
 
 // Initialize map when page loads
 window.onload = initMap;
+
+// Add this minimal report generation logic at the end of your script.js
+
+document.getElementById('generateReport').addEventListener('click', async () => {
+  const statusElement = document.getElementById('reportStatus');
+  statusElement.innerHTML = 'Generating report...';
+  try {
+    const response = await fetch('http://localhost:8000/generate_report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'Generate a basic traffic report.' })
+    });
+    const data = await response.json();
+    document.getElementById('reportPreview').textContent = data.report || 'No report generated.';
+    statusElement.innerHTML = 'Report generated successfully.';
+  } catch (error) {
+    statusElement.innerHTML = 'Error generating report.';
+  }
+});
