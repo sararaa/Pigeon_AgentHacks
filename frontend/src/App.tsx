@@ -8,7 +8,7 @@ import ProjectList from './components/Projects/ProjectList';
 import DataDashboard from './components/Dashboard/DataDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const GOOGLE_MAPS_API_KEY = '';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyAoH0FX8uQBoOHRIUnghIJBQUaNF-Bw-uQ';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

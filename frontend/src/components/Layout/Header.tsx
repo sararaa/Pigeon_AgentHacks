@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Bell, Menu, X, MapPin, Settings, Calendar, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { useMap } from '../../contexts/MapContext';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -14,6 +15,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
     const [areaType, setAreaType] = useState('district');
     const [areaName, setAreaName] = useState('');
     const [timestamp, setTimestamp] = useState('');
+    const { mapInstance: map } = useMap();
 
     const areaOptions = [
         'Market Street',
@@ -73,15 +75,30 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
 
         const result = await response.json();
         console.log(result)
-        //console.log("Prediction Summary:", result);
-        toast.success(result.summary, {
+        if (!map) {
+            console.error("Map instance not found");
+            return;
+          }
+          const toastId = toast.success((t) => (
+            <div className="flex justify-between items-start gap-4">
+              <div>{result.summary}</div>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                ✕
+              </button>
+            </div>
+          ), {
             duration: Infinity,
           });
         const colors = { 1: 'green', 2: 'orange', 3: 'red', 4: 'darkred' };
         const data = result.predictions;
+        
         data.forEach(({ level, path }) => {
             console.log(`Drawing path for level ${level}:`, path);
             const coords = path.map(([lat, lng]) => ({ lat, lng }));
+            map?.panTo(coords[0])
             new google.maps.Polyline({
               map,
               path: coords,
