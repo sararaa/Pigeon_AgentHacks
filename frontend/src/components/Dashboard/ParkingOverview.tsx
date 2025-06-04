@@ -3,6 +3,7 @@ import { ParkingData } from '../../types';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ParkingSquare, Clock } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -11,6 +12,8 @@ interface ParkingOverviewProps {
 }
 
 const ParkingOverview: React.FC<ParkingOverviewProps> = ({ parkingData }) => {
+  const { isDarkMode } = useTheme();
+
   // Calculate totals
   const totalSpots = parkingData.reduce((acc, curr) => acc + curr.totalSpots, 0);
   const availableSpots = parkingData.reduce((acc, curr) => acc + curr.availableSpots, 0);
@@ -29,7 +32,7 @@ const ParkingOverview: React.FC<ParkingOverviewProps> = ({ parkingData }) => {
       {
         data: [availableSpots, occupiedSpots],
         backgroundColor: ['#10B981', '#EF4444'],
-        borderColor: ['#ffffff', '#ffffff'],
+        borderColor: [isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff'],
         borderWidth: 2,
       },
     ],
@@ -42,6 +45,7 @@ const ParkingOverview: React.FC<ParkingOverviewProps> = ({ parkingData }) => {
         labels: {
           boxWidth: 12,
           padding: 15,
+          color: isDarkMode ? '#D1D5DB' : '#374151',
         },
       },
       tooltip: {
@@ -52,7 +56,12 @@ const ParkingOverview: React.FC<ParkingOverviewProps> = ({ parkingData }) => {
             const percentage = Math.round((value / totalSpots) * 100);
             return `${label}: ${value} spots (${percentage}%)`;
           }
-        }
+        },
+        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+        titleColor: isDarkMode ? '#D1D5DB' : '#111827',
+        bodyColor: isDarkMode ? '#D1D5DB' : '#374151',
+        borderColor: isDarkMode ? '#4B5563' : '#E5E7EB',
+        borderWidth: 1,
       }
     },
     cutout: '65%',
@@ -60,25 +69,25 @@ const ParkingOverview: React.FC<ParkingOverviewProps> = ({ parkingData }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full transition-colors duration-200">
       <div className="flex items-center mb-4">
-        <ParkingSquare className="h-5 w-5 text-blue-600 mr-2" />
-        <h3 className="text-lg font-medium text-gray-800">Parking Overview</h3>
+        <ParkingSquare className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Parking Overview</h3>
       </div>
       
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-700 mb-1">Available Spots</p>
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">Available Spots</p>
           <div className="flex items-end">
-            <span className="text-2xl font-semibold text-gray-800">{availableSpots}</span>
-            <span className="text-xs text-gray-500 ml-1 mb-0.5">/ {totalSpots}</span>
+            <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">{availableSpots}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-1 mb-0.5">/ {totalSpots}</span>
           </div>
         </div>
         
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-700 mb-1">Occupancy Rate</p>
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">Occupancy Rate</p>
           <div className="flex items-end">
-            <span className="text-2xl font-semibold text-gray-800">{occupancyRate}%</span>
+            <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">{occupancyRate}%</span>
           </div>
         </div>
       </div>
@@ -88,11 +97,11 @@ const ParkingOverview: React.FC<ParkingOverviewProps> = ({ parkingData }) => {
       </div>
       
       <div className="text-center mt-4">
-        <p className="text-sm text-gray-500">Average Parking Duration</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Average Parking Duration</p>
         <div className="flex items-center justify-center">
-          <Clock className="h-4 w-4 text-blue-600 mr-1" />
-          <p className="text-xl font-semibold text-gray-800">{avgDuration}</p>
-          <span className="text-xs text-gray-500 ml-1">minutes</span>
+          <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400 mr-1" />
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{avgDuration}</p>
+          <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">minutes</span>
         </div>
       </div>
     </div>

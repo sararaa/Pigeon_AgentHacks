@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, TrafficLayer } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, TrafficLayer, Libraries } from '@react-google-maps/api';
 import { useMap } from '../../contexts/MapContext';
 import { Project, TrafficData, ParkingData } from '../../types';
 import { Car, ParkingCircle, Building } from 'lucide-react';
-import ProjectMarker from './ProjectMarker';
+import ProjectMapMarker from './ProjectMapMarker';
 import TrafficMarker from './TrafficMarker';
 import ParkingMarker from './ParkingMarker';
 
@@ -12,12 +12,10 @@ const containerStyle = {
     height: '100%'
 };
 
-const center = {
-    lat: 37.7749,
-    lng: -122.4194
-};
+const DEFAULT_CENTER = { lat: 34.1478, lng: -118.1445 }; // Center of Pasadena
+const DEFAULT_ZOOM = 14;
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ['places'];
+const libraries: Libraries = ['places'];
 
 interface MapProps {
     apiKey: string;
@@ -54,17 +52,27 @@ const MapComponent: React.FC<MapProps> = ({ apiKey }) => {
         setIsMapLoaded(true);
         setMapInstance(map); // ✅ now globally accessible
         console.log("MAP LOADED", map);
+        
+        // Center on Pasadena
+        map.setCenter({ lat: 34.1478, lng: -118.1445 });
+        map.setZoom(13);
     }, [setIsMapLoaded, setMapInstance]);
 
     const handleMapLoad = (mapInstance: google.maps.Map) => {
         setMapInstance(mapInstance); // now you have access to the real map object
     };
 
-
     const onUnmount = useCallback(() => {
         mapRef.current = null;
         setIsMapLoaded(false);
     }, [setIsMapLoaded]);
+
+    // Handle map click to unselect project
+    const handleMapClick = useCallback(() => {
+        setSelectedProject(null);
+        setSelectedTraffic(null);
+        setSelectedParking(null);
+    }, [setSelectedProject]);
 
     // Set map type based on mapView
     useEffect(() => {
@@ -100,13 +108,18 @@ const MapComponent: React.FC<MapProps> = ({ apiKey }) => {
     const parkingLayerVisible = mapLayers.find(layer => layer.id === 'parking')?.isVisible;
     const projectsLayerVisible = mapLayers.find(layer => layer.id === 'projects')?.isVisible;
 
+    const handleProjectClick = (project: Project) => {
+        setSelectedProject(project);
+    };
+
     return (
         <GoogleMap
             mapContainerStyle={containerStyle}
-            center={center}
-            zoom={13}
+            center={DEFAULT_CENTER}
+            zoom={DEFAULT_ZOOM}
             onLoad={onLoad}
             onUnmount={onUnmount}
+            onClick={handleMapClick}
             options={{
                 streetViewControl: false,
                 mapTypeControl: false,
@@ -121,32 +134,31 @@ const MapComponent: React.FC<MapProps> = ({ apiKey }) => {
                 ]
             }}
         >
-            {/* Traffic Layer from Google Maps */}
+            {/* Traffic Layer */}
             {trafficLayerVisible && <TrafficLayer />}
 
             {/* Project Markers */}
             {projectsLayerVisible && projects.map(project => (
-                <ProjectMarker
+                <ProjectMapMarker
                     key={project.id}
                     project={project}
-                    isSelected={selectedProject?.id === project.id}
-                    onClick={() => setSelectedProject(project)}
+                    onClick={() => handleProjectClick(project)}
                 />
             ))}
 
             {/* Traffic Data Markers */}
-            {trafficLayerVisible && trafficData.map(traffic => (
+            {trafficLayerVisible && trafficData.map((traffic, index) => (
                 <TrafficMarker
-                    key={traffic.id}
+                    key={`traffic-${index}`}
                     traffic={traffic}
                     onClick={() => setSelectedTraffic(traffic)}
                 />
             ))}
 
             {/* Parking Data Markers */}
-            {parkingLayerVisible && parkingData.map(parking => (
+            {parkingLayerVisible && parkingData.map((parking, index) => (
                 <ParkingMarker
-                    key={parking.id}
+                    key={`parking-${index}`}
                     parking={parking}
                     onClick={() => setSelectedParking(parking)}
                 />

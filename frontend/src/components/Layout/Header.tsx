@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Menu, X, MapPin, Settings, Calendar, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -12,10 +12,33 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showNotifications, setShowNotifications] = useState(false);
+    const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+    const notificationRef = useRef<HTMLDivElement>(null);
     const [areaType, setAreaType] = useState('district');
     const [areaName, setAreaName] = useState('');
     const [timestamp, setTimestamp] = useState('');
     const { mapInstance: map } = useMap();
+
+    // Handle click outside notifications panel
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+                setShowNotifications(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const handleNotificationClick = () => {
+        setShowNotifications(!showNotifications);
+        if (hasUnreadNotifications) {
+            setHasUnreadNotifications(false);
+        }
+    };
 
     const areaOptions = [
         'Market Street',
@@ -150,7 +173,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   ];
   
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
@@ -158,14 +181,14 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleSidebar}
-              className="p-2 rounded-md text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
             >
               {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </motion.button>
             
             <div className="ml-4 flex items-center">
-              <MapPin className="h-6 w-6 text-blue-600" />
-              <h1 className="ml-2 text-xl font-semibold text-gray-900">Pigeon</h1>
+              <MapPin className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <h1 className="ml-2 text-xl font-semibold text-gray-900 dark:text-white">Pigeon</h1>
             </div>
           </div>
 
@@ -180,7 +203,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   <select
     value={areaName}
     onChange={(e) => setAreaName(e.target.value)}
-    className="pl-3 pr-10 py-2 border border-gray-300 rounded-md bg-white text-sm w-60"
+    className="pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm w-60 text-gray-900 dark:text-gray-100"
   >
     <option value="" disabled>Select a district or street</option>
     {areaOptions.map((area) => (
@@ -192,7 +215,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
   <button
     type="button"
     onClick={handlePredict}
-    className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition text-sm"
+    className="bg-blue-600 dark:bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition text-sm"
   >
     Predict
   </button>
@@ -206,7 +229,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
 
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 
-                <Calendar className="h-5 w-5 text-gray-400" />
+                <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 
               </div>
 
@@ -218,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
 
                 onChange={handleDateChange}
 
-                className="block pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+                className="block pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 sm:text-sm"
 
               />
 
@@ -232,7 +255,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
 
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 
-                <Clock className="h-5 w-5 text-gray-400" />
+                <Clock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
 
               </div>
 
@@ -248,9 +271,9 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
 
                 value={selectedTime}
 
-                onChange={handleTimeChange}
+                onChange={(e) => setSelectedTime(e.target.value)}
 
-                className="block pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+                className="block pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 sm:text-sm"
 
               />
 
@@ -258,85 +281,62 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, isSidebarOpen }) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 text-gray-500 hover:text-gray-700 focus:outline-none relative"
-              >
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-              </motion.button>
+            <div className="relative" ref={notificationRef}>
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleNotificationClick}
+                    className="relative p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
+                >
+                    <Bell className="h-6 w-6" />
+                    {hasUnreadNotifications && (
+                        <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 dark:bg-red-400 transform translate-x-1/2 -translate-y-1/2"></span>
+                    )}
+                </motion.button>
 
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-1 z-50"
-                  >
-                    {notifications.map((n) => (
-
-                    <div
-
-                    key={n.id}
-
-                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
-
-                    >
-
-                    <p className="text-sm font-medium text-gray-900">
-
-                        {n.title}
-
-                    </p>
-
-                    <p className="text-sm text-gray-500">
-
-                        {n.message}
-
-                    </p>
-
-                    <p className="text-xs text-gray-400 mt-1">
-
-                        {n.time}
-
-                    </p>
-
-                    </div>
-                    ))}
-                    <div className="border-t border-gray-100 mt-1">
-                      <a
-                        href="#"
-                        className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50"
-                      >
-                        View all notifications
-                      </a>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                <AnimatePresence>
+                    {showNotifications && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 mt-2 w-80 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                        >
+                            <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Notifications</h3>
+                            </div>
+                            {notifications.map((notification) => (
+                                <div
+                                    key={notification.id}
+                                    className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                >
+                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{notification.title}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{notification.message}</p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{notification.time}</p>
+                                </div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
-              onClick={() => toast.success('Settings panel coming soon!')}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => toast.success('Settings coming soon!')}
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
             >
-              <Settings className="h-6 w-6" />
+                <Settings className="h-6 w-6" />
             </motion.button>
 
             <div className="relative">
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white cursor-pointer"
-              >
-                CP
-              </motion.div>
+                <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white cursor-pointer"
+                >
+                    CP
+                </motion.div>
             </div>
           </div>
         </div>

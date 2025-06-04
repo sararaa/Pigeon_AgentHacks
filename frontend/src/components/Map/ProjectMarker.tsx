@@ -9,30 +9,29 @@ interface ProjectMarkerProps {
 }
 
 const ProjectMarker: React.FC<ProjectMarkerProps> = ({ project, isSelected, onClick }) => {
-  // Status colors
+  // Status colors - darker variants
   const getMarkerIcon = () => {
-    let color = '#2563EB'; // Default blue
+    let color = '#1E40AF'; // Darker blue
     
     switch (project.status) {
       case 'planned':
-        color = '#9333EA'; // Purple
+        color = '#6B21A8'; // Darker purple
         break;
       case 'in-progress':
-        color = '#F59E0B'; // Amber
+        color = '#B45309'; // Darker amber
         break;
       case 'completed':
-        color = '#10B981'; // Green
+        color = '#065F46'; // Darker green
         break;
     }
 
     return {
-      path: 'M12 0C5.4 0 0 5.4 0 12c0 6.6 5.4 12 12 12 6.6 0 12-5.4 12-12C24 5.4 18.6 0 12 0zm0 2c5.5 0 10 4.5 10 10 0 5.5-4.5 10-10 10-5.5 0-10-4.5-10-10C2 6.5 6.5 2 12 2zm1 5v7.6l5.7 3.3-1 1.7-6.7-4V7z',
+      path: google.maps.SymbolPath.CIRCLE,
       fillColor: color,
-      fillOpacity: isSelected ? 1.0 : 0.8,
-      strokeWeight: isSelected ? 2 : 1,
-      strokeColor: '#fff',
-      scale: isSelected ? 1.3 : 1.0,
-      anchor: new google.maps.Point(12, 12),
+      fillOpacity: isSelected ? 1.0 : 0.9,
+      strokeWeight: isSelected ? 3 : 2,
+      strokeColor: '#ffffff',
+      scale: isSelected ? 15 : 12,
     };
   };
 
@@ -41,7 +40,6 @@ const ProjectMarker: React.FC<ProjectMarkerProps> = ({ project, isSelected, onCl
       position={project.location}
       onClick={onClick}
       icon={getMarkerIcon()}
-      animation={isSelected ? google.maps.Animation.BOUNCE : undefined}
       zIndex={isSelected ? 1000 : 10}
     />
   );

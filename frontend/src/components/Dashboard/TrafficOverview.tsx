@@ -3,6 +3,7 @@ import { TrafficData } from '../../types';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Car, TrendingUp } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -11,6 +12,8 @@ interface TrafficOverviewProps {
 }
 
 const TrafficOverview: React.FC<TrafficOverviewProps> = ({ trafficData }) => {
+  const { isDarkMode } = useTheme();
+  
   // Calculate average congestion
   const avgCongestion = trafficData.reduce((acc, curr) => acc + curr.congestionLevel, 0) / trafficData.length;
   
@@ -31,7 +34,7 @@ const TrafficOverview: React.FC<TrafficOverviewProps> = ({ trafficData }) => {
           trafficData.filter(t => t.congestionLevel >= 75).length
         ],
         backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
-        borderColor: ['#ffffff', '#ffffff', '#ffffff'],
+        borderColor: [isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff'],
         borderWidth: 2,
       },
     ],
@@ -44,6 +47,7 @@ const TrafficOverview: React.FC<TrafficOverviewProps> = ({ trafficData }) => {
         labels: {
           boxWidth: 12,
           padding: 15,
+          color: isDarkMode ? '#D1D5DB' : '#374151',
         },
       },
       tooltip: {
@@ -55,7 +59,12 @@ const TrafficOverview: React.FC<TrafficOverviewProps> = ({ trafficData }) => {
             const percentage = Math.round((value / total) * 100);
             return `${label}: ${value} (${percentage}%)`;
           }
-        }
+        },
+        backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+        titleColor: isDarkMode ? '#D1D5DB' : '#111827',
+        bodyColor: isDarkMode ? '#D1D5DB' : '#374151',
+        borderColor: isDarkMode ? '#4B5563' : '#E5E7EB',
+        borderWidth: 1,
       }
     },
     cutout: '65%',
@@ -63,25 +72,25 @@ const TrafficOverview: React.FC<TrafficOverviewProps> = ({ trafficData }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 h-full">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 h-full transition-colors duration-200">
       <div className="flex items-center mb-4">
-        <Car className="h-5 w-5 text-blue-600 mr-2" />
-        <h3 className="text-lg font-medium text-gray-800">Traffic Overview</h3>
+        <Car className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Traffic Overview</h3>
       </div>
       
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-700 mb-1">Avg. Congestion</p>
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">Avg. Congestion</p>
           <div className="flex items-end">
-            <span className="text-2xl font-semibold text-gray-800">{Math.round(avgCongestion)}%</span>
+            <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">{Math.round(avgCongestion)}%</span>
           </div>
         </div>
         
-        <div className="bg-blue-50 p-3 rounded-lg">
-          <p className="text-sm text-blue-700 mb-1">Avg. Speed</p>
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">Avg. Speed</p>
           <div className="flex items-end">
-            <span className="text-2xl font-semibold text-gray-800">{Math.round(avgSpeed)}</span>
-            <span className="text-sm text-gray-600 ml-1 mb-0.5">mph</span>
+            <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">{Math.round(avgSpeed)}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 ml-1 mb-0.5">mph</span>
           </div>
         </div>
       </div>
@@ -91,11 +100,11 @@ const TrafficOverview: React.FC<TrafficOverviewProps> = ({ trafficData }) => {
       </div>
       
       <div className="text-center mt-4">
-        <p className="text-sm text-gray-500">Total Traffic Volume</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Total Traffic Volume</p>
         <div className="flex items-center justify-center">
-          <TrendingUp className="h-4 w-4 text-blue-600 mr-1" />
-          <p className="text-xl font-semibold text-gray-800">{totalVolume.toLocaleString()}</p>
-          <span className="text-xs text-gray-500 ml-1">vehicles/hr</span>
+          <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400 mr-1" />
+          <p className="text-xl font-semibold text-gray-800 dark:text-gray-200">{totalVolume.toLocaleString()}</p>
+          <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">vehicles/hr</span>
         </div>
       </div>
     </div>

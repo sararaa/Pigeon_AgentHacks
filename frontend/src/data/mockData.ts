@@ -4,202 +4,170 @@ import { MapIcon, Car, ParkingCircle, BuildingIcon, LayersIcon } from 'lucide-re
 export const mockProjects: Project[] = [
   {
     id: '1',
-    name: 'Downtown Revitalization',
-    description: 'Modernizing the downtown area with new sidewalks, lighting, and green spaces.',
+    name: 'Colorado Boulevard Revitalization',
+    description: 'Streetscape improvements and pedestrian enhancements along Colorado Boulevard in Old Pasadena',
     status: 'in-progress',
-    startDate: '2025-01-15',
-    endDate: '2025-12-20',
-    budget: 2500000,
+    startDate: '2024-01-15',
+    endDate: '2024-08-30',
+    budget: 5200000,
     location: {
-      lat: 37.7749,
-      lng: -122.4194
+      lat: 34.1453,
+      lng: -118.1513
     },
-    address: '123 Market St, San Francisco, CA',
-    department: 'Urban Development',
-    tags: ['infrastructure', 'public spaces', 'lighting']
+    address: '300 E Colorado Blvd, Pasadena, CA',
+    department: 'Public Works',
+    tags: ['infrastructure', 'pedestrian', 'beautification']
   },
   {
     id: '2',
-    name: 'Bike Lane Expansion',
-    description: 'Adding 12 miles of protected bike lanes throughout the city.',
+    name: 'Rose Bowl Stadium Upgrades',
+    description: 'Modernization of facilities and safety improvements at the historic Rose Bowl Stadium',
     status: 'planned',
-    startDate: '2025-03-10',
-    endDate: '2025-08-15',
-    budget: 850000,
+    startDate: '2024-06-01',
+    endDate: '2025-01-15',
+    budget: 8500000,
     location: {
-      lat: 37.7845,
-      lng: -122.4338
+      lat: 34.1613,
+      lng: -118.1676
     },
-    address: '456 Green St, San Francisco, CA',
-    department: 'Transportation',
-    tags: ['cycling', 'transportation', 'safety']
+    address: '1001 Rose Bowl Dr, Pasadena, CA',
+    department: 'Parks & Recreation',
+    tags: ['sports', 'renovation', 'historic']
   },
   {
     id: '3',
-    name: 'Central Park Renovation',
-    description: 'Upgrading facilities at Central Park including playgrounds and restrooms.',
-    status: 'completed',
-    startDate: '2024-05-01',
-    endDate: '2024-12-15',
-    budget: 1200000,
+    name: 'Lake Avenue Complete Streets',
+    description: 'Implementation of bike lanes and traffic calming measures on Lake Avenue',
+    status: 'in-progress',
+    startDate: '2024-02-01',
+    endDate: '2024-07-30',
+    budget: 3800000,
     location: {
-      lat: 37.7695,
-      lng: -122.4091
+      lat: 34.1478,
+      lng: -118.1325
     },
-    address: '789 Park Ave, San Francisco, CA',
-    department: 'Parks & Recreation',
-    tags: ['parks', 'recreation', 'public spaces']
+    address: '500 S Lake Ave, Pasadena, CA',
+    department: 'Transportation',
+    tags: ['bicycle', 'safety', 'traffic']
   },
   {
     id: '4',
-    name: 'Smart Traffic Signals',
-    description: 'Installing AI-powered traffic signals at 25 key intersections.',
-    status: 'in-progress',
-    startDate: '2024-11-01',
-    endDate: '2025-04-30',
-    budget: 1800000,
+    name: 'Playhouse District Arts Center',
+    description: 'New community arts center and performance space in the Playhouse District',
+    status: 'planned',
+    startDate: '2024-09-01',
+    endDate: '2025-06-30',
+    budget: 12000000,
     location: {
-      lat: 37.7911,
-      lng: -122.4011
+      lat: 34.1461,
+      lng: -118.1391
     },
-    address: '101 Mission St, San Francisco, CA',
-    department: 'Transportation',
-    tags: ['smart city', 'traffic', 'technology']
+    address: '39 S El Molino Ave, Pasadena, CA',
+    department: 'Cultural Affairs',
+    tags: ['arts', 'community', 'development']
   }
 ];
 
 export const mockTrafficData: TrafficData[] = [
   {
-    id: 't1',
-    location: 'Market & 5th',
-    congestionLevel: 78,
-    averageSpeed: 12,
-    volume: 850,
-    timestamp: '2025-02-15T08:30:00',
+    id: '1',
+    location: 'Colorado & Fair Oaks',
+    congestionLevel: 85,
+    averageSpeed: 15,
+    volume: 1200,
+    timestamp: new Date().toISOString(),
     coordinates: {
-      lat: 37.7835,
-      lng: -122.4089
+      lat: 34.1453,
+      lng: -118.1513
     }
   },
   {
-    id: 't2',
-    location: 'Van Ness & Geary',
+    id: '2',
+    location: 'Lake & California',
     congestionLevel: 65,
+    averageSpeed: 22,
+    volume: 800,
+    timestamp: new Date().toISOString(),
+    coordinates: {
+      lat: 34.1478,
+      lng: -118.1325
+    }
+  },
+  {
+    id: '3',
+    location: 'Orange Grove & Colorado',
+    congestionLevel: 75,
     averageSpeed: 18,
-    volume: 720,
-    timestamp: '2025-02-15T08:30:00',
+    volume: 950,
+    timestamp: new Date().toISOString(),
     coordinates: {
-      lat: 37.7853,
-      lng: -122.4222
-    }
-  },
-  {
-    id: 't3',
-    location: 'Embarcadero & Howard',
-    congestionLevel: 45,
-    averageSpeed: 25,
-    volume: 580,
-    timestamp: '2025-02-15T08:30:00',
-    coordinates: {
-      lat: 37.7906,
-      lng: -122.3895
-    }
-  },
-  {
-    id: 't4',
-    location: '19th Ave & Lincoln',
-    congestionLevel: 82,
-    averageSpeed: 8,
-    volume: 910,
-    timestamp: '2025-02-15T08:30:00',
-    coordinates: {
-      lat: 37.7642,
-      lng: -122.4769
+      lat: 34.1456,
+      lng: -118.1592
     }
   }
 ];
 
 export const mockParkingData: ParkingData[] = [
   {
-    id: 'p1',
-    location: 'Union Square Garage',
-    totalSpots: 850,
-    availableSpots: 127,
-    occupancyRate: 85,
-    averageDuration: 156,
-    timestamp: '2025-02-15T08:30:00',
+    id: '1',
+    location: 'Marengo Parking Garage',
+    totalSpots: 450,
+    availableSpots: 85,
+    occupancyRate: 81,
+    averageDuration: 180,
+    timestamp: new Date().toISOString(),
     coordinates: {
-      lat: 37.7879,
-      lng: -122.4075
+      lat: 34.1467,
+      lng: -118.1397
     }
   },
   {
-    id: 'p2',
-    location: 'Civic Center Garage',
-    totalSpots: 1200,
-    availableSpots: 423,
+    id: '2',
+    location: 'De Lacey Parking Structure',
+    totalSpots: 650,
+    availableSpots: 230,
     occupancyRate: 65,
-    averageDuration: 187,
-    timestamp: '2025-02-15T08:30:00',
+    averageDuration: 150,
+    timestamp: new Date().toISOString(),
     coordinates: {
-      lat: 37.7795,
-      lng: -122.4174
+      lat: 34.1458,
+      lng: -118.1517
     }
   },
   {
-    id: 'p3',
-    location: 'Fifth & Mission Garage',
-    totalSpots: 2500,
-    availableSpots: 568,
-    occupancyRate: 77,
-    averageDuration: 143,
-    timestamp: '2025-02-15T08:30:00',
-    coordinates: {
-      lat: 37.7833,
-      lng: -122.4062
-    }
-  },
-  {
-    id: 'p4',
-    location: 'North Beach Garage',
+    id: '3',
+    location: 'Schoolhouse Parking Garage',
     totalSpots: 350,
-    availableSpots: 42,
-    occupancyRate: 88,
-    averageDuration: 122,
-    timestamp: '2025-02-15T08:30:00',
+    availableSpots: 45,
+    occupancyRate: 87,
+    averageDuration: 210,
+    timestamp: new Date().toISOString(),
     coordinates: {
-      lat: 37.8002,
-      lng: -122.4084
+      lat: 34.1472,
+      lng: -118.1442
     }
   }
 ];
 
 export const mapLayers: MapLayer[] = [
   {
-    id: 'base',
-    name: 'Base Map',
-    isVisible: true,
-    type: 'base',
-    icon: 'layers'
-  },
-  {
     id: 'traffic',
     name: 'Traffic Data',
-    isVisible: true,
+    isVisible: false,
     type: 'traffic',
     icon: 'car'
   },
   {
     id: 'parking',
     name: 'Parking Data',
-    isVisible: true,
+    isVisible: false,
     type: 'parking',
     icon: 'parking'
   },
   {
     id: 'projects',
     name: 'City Projects',
-    isVisible: true,
+    isVisible: false,
     type: 'projects',
     icon: 'building'
   }

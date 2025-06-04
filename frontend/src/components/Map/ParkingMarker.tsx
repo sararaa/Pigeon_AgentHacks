@@ -8,32 +8,28 @@ interface ParkingMarkerProps {
 }
 
 const ParkingMarker: React.FC<ParkingMarkerProps> = ({ parking, onClick }) => {
-  // Color based on availability
-  const getColor = () => {
-    const availability = (parking.availableSpots / parking.totalSpots) * 100;
-    if (availability < 15) return '#EF4444'; // Red for low availability
-    if (availability < 40) return '#F59E0B'; // Amber for medium availability
-    return '#10B981'; // Green for high availability
-  };
-
   const getMarkerIcon = () => {
+    const occupancyRate = (parking.availableSpots / parking.totalSpots) * 100;
+    const color = occupancyRate > 50 ? '#22c55e' :
+                 occupancyRate > 20 ? '#f59e0b' :
+                 '#dc2626';
+
     return {
-      path: 'M13 3H11V11H5V13H11V21H13V13H19V11H13V3Z',
-      fillColor: getColor(),
-      fillOpacity: 0.8,
-      strokeWeight: 1,
+      path: 'M 0,0 m -10,0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0 M 0,-8 L 0,8 M -8,0 L 8,0',
+      fillColor: color,
+      fillOpacity: 0.7,
+      strokeWeight: 2,
       strokeColor: '#ffffff',
-      scale: 1.5,
-      anchor: new google.maps.Point(12, 12),
+      scale: 1,
     };
   };
 
   return (
     <Marker
-      position={parking.coordinates}
+      position={parking.location}
       onClick={onClick}
       icon={getMarkerIcon()}
-      zIndex={5}
+      title={`${parking.name}: ${parking.availableSpots}/${parking.totalSpots} spots available`}
     />
   );
 };
