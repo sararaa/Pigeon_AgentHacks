@@ -19,6 +19,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick 
     }
   };
 
+  
   const getStatusText = () => {
     switch (project.status) {
       case 'planned': return 'Planned';
