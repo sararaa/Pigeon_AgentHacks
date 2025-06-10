@@ -2,17 +2,23 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  status: 'planned' | 'in-progress' | 'completed';
+  status: 'planned' | 'in-progress' | 'completed' | 'on-hold';
   startDate: string;
   endDate: string;
   budget: number;
+  locationType: 'point' | 'line' | 'area';
   location: {
     lat: number;
     lng: number;
   };
+  coordinates?: {
+    lat: number;
+    lng: number;
+  }[];
   address: string;
   department: string;
   tags: string[];
+  color: string;
 }
 
 export interface TrafficData {

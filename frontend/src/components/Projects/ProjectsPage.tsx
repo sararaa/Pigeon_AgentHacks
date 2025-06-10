@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useMap } from '../../contexts/MapContext';
 import { Project } from '../../types';
-import { Plus, Calendar, DollarSign, Edit2, Check, X, MapPin, Building2, Tag } from 'lucide-react';
+import { Plus, Calendar, DollarSign, Edit2, Check, X, MapPin, Building2, Tag, ArrowUpDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { geocodeAddress } from '../../utils/geocoding';
+import LocationSelector from './LocationSelector';
 
 // Predefined colors for projects
 const projectColors = [
@@ -18,11 +19,20 @@ const projectColors = [
   { name: 'Indigo', value: '#4f46e5' },
 ];
 
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  field: 'name' | 'status' | 'endDate' | 'budget' | 'department';
+  direction: SortDirection;
+}
+
 const ProjectsPage: React.FC = () => {
   const { projects, addProject, updateProject, deleteProject, setSelectedProject, mapInstance } = useMap();
   const [editingProject, setEditingProject] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Project>>({});
   const [isAddingProject, setIsAddingProject] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<Project['status'][]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'name', direction: 'asc' });
   const [newProject, setNewProject] = useState<Omit<Project, 'id'>>({
     name: '',
     description: '',
@@ -30,12 +40,65 @@ const ProjectsPage: React.FC = () => {
     startDate: '',
     endDate: '',
     budget: 0,
+    locationType: 'point',
     location: { lat: 34.1478, lng: -118.1445 },
+    coordinates: [],
     address: '',
     department: '',
     tags: [],
     color: projectColors[0].value
   });
+
+  // Filter and sort projects
+  const filteredAndSortedProjects = useMemo(() => {
+    let result = [...projects];
+
+    // Apply status filter
+    if (selectedStatuses.length > 0) {
+      result = result.filter(project => selectedStatuses.includes(project.status));
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortConfig.field) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'status':
+          comparison = a.status.localeCompare(b.status);
+          break;
+        case 'endDate':
+          comparison = new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+          break;
+        case 'budget':
+          comparison = a.budget - b.budget;
+          break;
+        case 'department':
+          comparison = a.department.localeCompare(b.department);
+          break;
+      }
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [projects, selectedStatuses, sortConfig]);
+
+  const handleStatusToggle = (status: Project['status']) => {
+    setSelectedStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status);
+      }
+      return [...prev, status];
+    });
+  };
+
+  const handleSort = (field: SortConfig['field']) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
   const handleEditClick = (project: Project) => {
     setEditingProject(project.id);
@@ -126,8 +189,8 @@ const ProjectsPage: React.FC = () => {
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newProject.name || !newProject.description || !newProject.address) {
-      toast.error('Name, description, and address are required');
+    if (!newProject.name || !newProject.description) {
+      toast.error('Name and description are required');
       return;
     }
 
@@ -137,19 +200,22 @@ const ProjectsPage: React.FC = () => {
     }
 
     try {
-      // Geocode the address to get coordinates
-      const location = await geocodeAddress(newProject.address);
-      const projectToAdd = {
-        ...newProject,
-        location
-      };
+      // If address is provided, geocode it and update the location
+      if (newProject.address) {
+        try {
+          const location = await geocodeAddress(newProject.address);
+          newProject.location = location;
+        } catch (error) {
+          console.warn('Could not geocode address, using map-selected location instead');
+        }
+      }
 
-      await addProject(projectToAdd);
+      await addProject(newProject);
       setIsAddingProject(false);
 
       // Center map on the new project location
       if (mapInstance) {
-        mapInstance.panTo(location);
+        mapInstance.panTo(newProject.location);
         mapInstance.setZoom(15);
       }
 
@@ -160,7 +226,9 @@ const ProjectsPage: React.FC = () => {
         startDate: '',
         endDate: '',
         budget: 0,
+        locationType: 'point',
         location: { lat: 34.1478, lng: -118.1445 },
+        coordinates: [],
         address: '',
         department: '',
         tags: [],
@@ -202,6 +270,12 @@ const ProjectsPage: React.FC = () => {
     </div>
   );
 
+  const formatDisplayDate = (dateString: string) => {
+    const [date] = dateString.split('T');
+    const [year, month, day] = date.split('-');
+    return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString();
+  };
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -216,6 +290,58 @@ const ProjectsPage: React.FC = () => {
           <Plus className="h-5 w-5 mr-2" />
           Add Project
         </button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div className="flex flex-wrap gap-4">
+          {/* Status Filter */}
+          <div className="flex flex-wrap gap-2">
+            {(['planned', 'in-progress', 'completed', 'on-hold'] as const).map(status => (
+              <button
+                key={status}
+                onClick={() => handleStatusToggle(status)}
+                className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedStatuses.includes(status)
+                    ? status === 'on-hold'
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {status === 'on-hold' ? 'On Hold' : status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort Buttons */}
+          <div className="flex gap-2 ml-auto">
+            {[
+              { field: 'name', label: 'Name' },
+              { field: 'status', label: 'Status' },
+              { field: 'endDate', label: 'Due Date' },
+              { field: 'budget', label: 'Budget' },
+              { field: 'department', label: 'Department' }
+            ].map(({ field, label }) => (
+              <button
+                key={field}
+                onClick={() => handleSort(field as SortConfig['field'])}
+                className={`flex items-center px-3 py-1 rounded-md text-sm font-medium ${
+                  sortConfig.field === field
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {label}
+                {sortConfig.field === field && (
+                  <ArrowUpDown className={`h-4 w-4 ml-1 ${
+                    sortConfig.direction === 'desc' ? 'transform rotate-180' : ''
+                  }`} />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Project List */}
@@ -233,7 +359,7 @@ const ProjectsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {projects.map((project) => (
+              {filteredAndSortedProjects.map((project) => (
                 <tr key={project.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   {editingProject === project.id ? (
                     // Edit Mode
@@ -314,6 +440,7 @@ const ProjectsPage: React.FC = () => {
                               <option value="planned">Planned</option>
                               <option value="in-progress">In Progress</option>
                               <option value="completed">Completed</option>
+                              <option value="on-hold">On Hold</option>
                             </select>
                           </div>
                         </div>
@@ -365,9 +492,11 @@ const ProjectsPage: React.FC = () => {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           project.status === 'planned' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
                           project.status === 'in-progress' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' :
+                          project.status === 'on-hold' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
                           'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                         }`}>
-                          {project.status === 'in-progress' ? 'In Progress' : 
+                          {project.status === 'in-progress' ? 'In Progress' :
+                           project.status === 'on-hold' ? 'On Hold' :
                            project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                         </span>
                       </td>
@@ -375,10 +504,10 @@ const ProjectsPage: React.FC = () => {
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1" />
-                            {new Date(project.startDate).toLocaleDateString()}
+                            {formatDisplayDate(project.startDate)}
                           </div>
                           <div className="text-xs mt-1">
-                            to {new Date(project.endDate).toLocaleDateString()}
+                            to {formatDisplayDate(project.endDate)}
                           </div>
                         </div>
                       </td>
@@ -415,11 +544,12 @@ const ProjectsPage: React.FC = () => {
 
       {/* Add Project Modal */}
       {isAddingProject && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg my-8">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Add New Project</h2>
               <button
+                type="button"
                 onClick={() => setIsAddingProject(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
@@ -507,6 +637,7 @@ const ProjectsPage: React.FC = () => {
                   <option value="planned">Planned</option>
                   <option value="in-progress">In Progress</option>
                   <option value="completed">Completed</option>
+                  <option value="on-hold">On Hold</option>
                 </select>
               </div>
 
@@ -525,20 +656,35 @@ const ProjectsPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Address
+                  Location
                 </label>
-                <input
-                  type="text"
-                  value={newProject.address}
-                  onChange={(e) => setNewProject({ ...newProject, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
-                  placeholder="Enter project address"
-                />
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={newProject.address}
+                    onChange={(e) => setNewProject({ ...newProject, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                    placeholder="Enter address (optional)"
+                  />
+                  <LocationSelector
+                    initialLocation={newProject.location}
+                    initialCoordinates={newProject.coordinates}
+                    initialLocationType={newProject.locationType}
+                    onLocationChange={(location, coordinates, locationType) => {
+                      setNewProject({
+                        ...newProject,
+                        location,
+                        coordinates: coordinates || [],
+                        locationType
+                      });
+                    }}
+                  />
+                </div>
               </div>
 
               {colorPickerJSX}
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="sticky bottom-0 z-10 flex justify-end space-x-3 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <button
                   type="button"
                   onClick={() => setIsAddingProject(false)}

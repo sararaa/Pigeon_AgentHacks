@@ -14,10 +14,15 @@ export interface Project {
     startDate: string;
     endDate: string;
     budget: number;
+    locationType: 'point' | 'line' | 'area';
     location: {
         lat: number;
         lng: number;
     };
+    coordinates: {
+        lat: number;
+        lng: number;
+    }[];
     address: string;
     department: string;
     tags: string[];

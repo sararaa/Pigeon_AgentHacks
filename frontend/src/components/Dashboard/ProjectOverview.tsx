@@ -18,6 +18,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ projects }) => {
   const plannedCount = projects.filter(p => p.status === 'planned').length;
   const inProgressCount = projects.filter(p => p.status === 'in-progress').length;
   const completedCount = projects.filter(p => p.status === 'completed').length;
+  const onHoldCount = projects.filter(p => p.status === 'on-hold').length;
   
   // Calculate total budget
   const totalBudget = projects.reduce((acc, curr) => acc + curr.budget, 0);
@@ -34,15 +35,19 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ projects }) => {
   const completedBudget = projects
     .filter(p => p.status === 'completed')
     .reduce((acc, curr) => acc + curr.budget, 0);
+
+  const onHoldBudget = projects
+    .filter(p => p.status === 'on-hold')
+    .reduce((acc, curr) => acc + curr.budget, 0);
   
   // Chart data
   const chartData = {
-    labels: ['Planned', 'In Progress', 'Completed'],
+    labels: ['Planned', 'In Progress', 'Completed', 'On Hold'],
     datasets: [
       {
-        data: [plannedCount, inProgressCount, completedCount],
-        backgroundColor: ['#9333EA', '#F59E0B', '#10B981'],
-        borderColor: [isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff'],
+        data: [plannedCount, inProgressCount, completedCount, onHoldCount],
+        backgroundColor: ['#9333EA', '#F59E0B', '#10B981', '#EAB308'],
+        borderColor: [isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff', isDarkMode ? '#1F2937' : '#ffffff'],
         borderWidth: 2,
       },
     ],
@@ -97,21 +102,23 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ projects }) => {
         <Doughnut data={chartData} options={chartOptions} />
       </div>
       
-      <div className="text-center mt-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Budget Allocation</p>
-        <div className="flex items-center justify-center space-x-4 text-xs mt-1">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-purple-600 dark:bg-purple-500 rounded-full mr-1"></div>
-            <span className="text-gray-600 dark:text-gray-300">${(plannedBudget / 1000000).toFixed(1)}M</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-amber-500 dark:bg-amber-400 rounded-full mr-1"></div>
-            <span className="text-gray-600 dark:text-gray-300">${(inProgressBudget / 1000000).toFixed(1)}M</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-600 dark:bg-green-500 rounded-full mr-1"></div>
-            <span className="text-gray-600 dark:text-gray-300">${(completedBudget / 1000000).toFixed(1)}M</span>
-          </div>
+      <p className="text-sm text-gray-500 dark:text-gray-400">Budget Allocation</p>
+      <div className="flex items-center justify-center space-x-4 text-xs mt-1">
+        <div className="flex items-center">
+          <div className="w-3 h-3 bg-purple-600 dark:bg-purple-500 rounded-full mr-1"></div>
+          <span className="text-gray-600 dark:text-gray-300">${(plannedBudget / 1000000).toFixed(1)}M</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 bg-amber-500 dark:bg-amber-400 rounded-full mr-1"></div>
+          <span className="text-gray-600 dark:text-gray-300">${(inProgressBudget / 1000000).toFixed(1)}M</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 bg-green-600 dark:bg-green-500 rounded-full mr-1"></div>
+          <span className="text-gray-600 dark:text-gray-300">${(completedBudget / 1000000).toFixed(1)}M</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-3 h-3 bg-yellow-500 dark:bg-yellow-400 rounded-full mr-1"></div>
+          <span className="text-gray-600 dark:text-gray-300">${(onHoldBudget / 1000000).toFixed(1)}M</span>
         </div>
       </div>
     </div>

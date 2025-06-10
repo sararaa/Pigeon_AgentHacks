@@ -23,6 +23,9 @@ const ProjectMarker: React.FC<ProjectMarkerProps> = ({ project, isSelected, onCl
       case 'completed':
         color = '#065F46'; // Darker green
         break;
+      case 'on-hold':
+        color = '#A16207'; // Darker yellow
+        break;
     }
 
     return {

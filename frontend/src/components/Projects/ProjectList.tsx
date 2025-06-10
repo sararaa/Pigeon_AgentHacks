@@ -23,7 +23,7 @@ const ProjectList: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3 flex flex-wrap items-center justify-between">
+      <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">City Projects</h3>
 
         <div className="flex space-x-1 mt-2 sm:mt-0">
@@ -66,6 +66,16 @@ const ProjectList: React.FC = () => {
             }`}
           >
             Completed
+          </button>
+          <button
+            onClick={() => setStatusFilter('on-hold')}
+            className={`px-3 py-1 text-sm rounded-md transition-colors duration-150 ${
+              statusFilter === 'on-hold'
+                ? 'bg-yellow-500 dark:bg-yellow-400 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            On Hold
           </button>
         </div>
       </div>

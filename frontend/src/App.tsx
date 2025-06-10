@@ -28,6 +28,7 @@ const AppContent = () => {
         isOpen={isSidebarOpen} 
         onToggle={toggleSidebar} 
         setCurrentView={setCurrentView}
+        currentView={currentView}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -70,6 +71,7 @@ const AppContent = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.2 }}
+                className="container mx-auto px-6 py-8"
               >
                 <ProjectsPage />
               </motion.div>

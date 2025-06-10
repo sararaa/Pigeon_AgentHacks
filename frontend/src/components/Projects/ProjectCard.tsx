@@ -14,6 +14,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick 
       case 'planned': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300';
       case 'in-progress': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300';
       case 'completed': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
+      case 'on-hold': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
       default: return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300';
     }
   };
@@ -23,6 +24,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isSelected, onClick 
       case 'planned': return 'Planned';
       case 'in-progress': return 'In Progress';
       case 'completed': return 'Completed';
+      case 'on-hold': return 'On Hold';
       default: return 'Unknown';
     }
   };
